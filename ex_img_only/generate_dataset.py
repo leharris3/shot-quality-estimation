@@ -4,6 +4,8 @@ import cv2
 import pandas as pd
 import numpy as np
 import tqdm
+import multiprocessing
+import subprocess
 from datascience import *
 
 logs_dir = '/Users/leviharris/Library/CloudStorage/GoogleDrive-leviharris555@gmail.com/Other computers/mac_new/NBA_HUDL_data/nba-plus-statvu-dataset/hudl-game-logs'
@@ -83,7 +85,7 @@ for log_path in tqdm.tqdm(logs):
 all_shot_attempts_table = Table.from_df(all_shot_attempts).where('video_path', are.not_equal_to(None))
 all_shot_attempts_table
 
-database_path = '/Users/leviharris/Library/CloudStorage/GoogleDrive-leviharris555@gmail.com/My Drive/research/datasets/nba-pre-shot-attempts'
+database_path = '/Users/leviharris/Library/CloudStorage/GoogleDrive-leviharris555@gmail.com/My Drive/research/datasets/nba-pre-shot-attempts-imgs'
 
 def create_new_clip(row, database_dir):
     """
@@ -92,14 +94,15 @@ def create_new_clip(row, database_dir):
     """
 
     # game id info from row object
-    attempt = str(row[0])
-    timestamp = str(row[1])
-    is_made = 'make' if row[2] else 'miss'
-    video_path = str(row[3])
-    uni_id = str(row[4])
+    attempt = str(row['action_name'])
+    timestamp = str(row['second'])
+    is_made = 'make' if row['is_made'] else 'miss'
+    video_path = str(row['video_path'])
+    uni_id = str(row['uni_id'])
 
     # game name and dst path
-    name = 'uni_id_' + uni_id + '.' + 'points_' + attempt + '.timestamp_' + timestamp + '_' + '.mp4'
+    # currently using .png extension
+    name = 'uni_id_' + uni_id + '.' + 'points_' + attempt + '.timestamp_' + timestamp + '_' + '.png'
     dst_path = os.path.join(database_dir, is_made, name)
 
     # open cv2 capture object
@@ -110,46 +113,78 @@ def create_new_clip(row, database_dir):
     # create a video writer object
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     fps = capture.get(cv2.CAP_PROP_FPS)
-    writer = cv2.VideoWriter(
-        dst_path,
-        fourcc,
-        fps,
-        (224, 224)
-    )
+    # writer = cv2.VideoWriter(
+    #     dst_path,
+    #     fourcc,
+    #     fps,
+    #     (224, 224)
+    # )
     
     # calculate the starting frame of the shot attempt
-    # actual clip start - six seconds
-    clip_start_frame = int((float(timestamp) * fps) - (fps * 5.0))
+    # currently taking one frame starting at two seconds before timestamp
+    clip_start_frame = float(timestamp) * fps - (2 * fps)
 
     # each clip will be three seconds in length
-    clip_duration = fps * 3
-    clip_end_frame = int(clip_start_frame + clip_duration)
+    clip_duration = 1
 
     # frame step for sparse sampling
-    frame_step = math.floor((clip_duration) / 16)
+    frame_step = math.floor((clip_duration) / 16) # current not used
     frame_index = clip_start_frame
 
     # write resized frames to clip out path
-    for index in range(0, 16):
+    for index in range(0, 1):
 
         # set video capture to next frame
         capture.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
         ret, frame = capture.read()
 
         # resize frame to (224x224)
-        resized_frame = cv2.resize(frame, (224, 224), interpolation=cv2.INTER_AREA)
-        writer.write(resized_frame)
+        # currently not resizing frames
+        # resized_frame = cv2.resize(frame, (224, 224), interpolation=cv2.INTER_AREA)
+
+        # write a single frame to the output destination
+
+        cv2.imwrite(dst_path, frame)
+
+        # writer currently not used
+        # writer.write(resized_frame)
 
         # increment the frame index
-        frame_index += frame_step
+        # currently not used
+        # frame_index += frame_step
 
     # release writer/reader objects
     capture.release()
-    writer.release()
 
-# generate all shot clips
-for row in tqdm.tqdm(all_shot_attempts_table.rows):
+    # currently not used
+    # writer.release()
+
+def create_new_clip_wrapper(row_database_path_tuple):
     try:
+        row, database_path = row_database_path_tuple
         create_new_clip(row, database_path)
     except:
-        pass
+        print(f"Could not process video: {row['uni_id']}.")
+
+def row_to_dict(row):
+    return {
+        'action_name': row.action_name,
+        'second': row.second,
+        'is_made': row.is_made,
+        'video_path': row.video_path,
+        'uni_id': row.uni_id
+    }
+
+def main():
+    rows_with_path = [(row_to_dict(row), database_path) for row in all_shot_attempts_table.rows]
+    num_processes = multiprocessing.cpu_count()
+    with multiprocessing.Pool(processes=num_processes) as pool:
+        for _ in tqdm.tqdm(
+            pool.imap_unordered(create_new_clip_wrapper, rows_with_path), 
+            total=len(rows_with_path)
+            ):
+            pass
+
+if __name__ == '__main__':
+    multiprocessing.freeze_support()
+    main()
