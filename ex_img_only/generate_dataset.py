@@ -85,7 +85,7 @@ for log_path in tqdm.tqdm(logs):
 all_shot_attempts_table = Table.from_df(all_shot_attempts).where('video_path', are.not_equal_to(None))
 all_shot_attempts_table
 
-database_path = '/Users/leviharris/Library/CloudStorage/GoogleDrive-leviharris555@gmail.com/My Drive/research/datasets/nba-pre-shot-attempts-imgs'
+database_path = 'finetune_vgg/dataset_b'
 
 def create_new_clip(row, database_dir):
     """
@@ -122,7 +122,7 @@ def create_new_clip(row, database_dir):
     
     # calculate the starting frame of the shot attempt
     # currently taking one frame starting at two seconds before timestamp
-    clip_start_frame = float(timestamp) * fps - (2 * fps)
+    clip_start_frame = float(timestamp) * fps - (2.75 * fps)
 
     # each clip will be three seconds in length
     clip_duration = 1
