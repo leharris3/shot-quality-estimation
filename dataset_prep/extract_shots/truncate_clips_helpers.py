@@ -96,7 +96,7 @@ def pred_conf_scores(video_tensor, device, model, step_size: int = STEP):
 def get_highest_conf_idx(confidence_scores, sigma: int = 5):
     idv_confidence_scores = [tensor[0][0].item() for tensor in confidence_scores]
     conf_denoise = gaussian_filter1d(idv_confidence_scores, sigma=sigma)
-    return find_local_max(conf_denoise)
+    return find_local_min(conf_denoise)
 
 
 def split_shot_attempt_clip(

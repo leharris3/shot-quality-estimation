@@ -8,12 +8,12 @@ from tqdm import tqdm
 from paths import HUDL_LOGS_DIR, REPLAYS_DIR
 from timeout import function_with_timeout
 
-OUTDIR = "/playpen-storage/levlevi/contextualized-shot-quality-analysis/data/experiments/test-sets/result-shown/result_shown_test_nba_3.6k_4s"
+OUTDIR = "/playpen-storage/levlevi/contextualized-shot-quality-analysis/data/experiments/results-shown/result_shown_nba_?k"
 MADE_SUBDIR = "made"
 MISSED_SUBDIR = "missed"
-SHOT_DURATION_TOTAL = 4  # total clip length is 7 seconds
-SHOT_DURATION_OFFSET_NEG = 1  # start clip 5 seconds before timestamps
-TARGET_HEIGHT = 480
+SHOT_DURATION_TOTAL = 7  # total clip length is 7 seconds
+SHOT_DURATION_OFFSET_NEG = 5  # start clip 5 seconds before timestamps
+TARGET_HEIGHT = 224
 MAX_THREAD_POOL_WORKERS = 32
 
 
@@ -152,8 +152,8 @@ def extract_shots(hudl_logs_fps: str, videos_fps: str):
 
 def main():
 
-    hudl_logs_dir = "/playpen-storage/levlevi/contextualized-shot-quality-analysis/data/nba/test-set/hudl-game-logs"
-    videos_dir = "/playpen-storage/levlevi/contextualized-shot-quality-analysis/data/nba/test-set/replays"
+    hudl_logs_dir = "/playpen-storage/levlevi/contextualized-shot-quality-analysis/data/nba/result-shown-split/hudl-game-logs"
+    videos_dir = "/playpen-storage/levlevi/contextualized-shot-quality-analysis/data/nba/result-shown-split/replays"
 
     hudl_logs_fps = generate_file_paths(hudl_logs_dir)
     videos_fps = generate_file_paths(videos_dir)

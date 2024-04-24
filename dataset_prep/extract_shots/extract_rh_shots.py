@@ -1,20 +1,43 @@
-import time
-
-from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 from extract_rs_shots import *
-from truncate_clips import *
-from paths import *
+from truncate_clips_helpers import (
+    get_model,
+    read_video_to_tensor_buffer,
+    pred_conf_scores,
+    get_highest_conf_idx,
+)
+from paths import LOCAL_DIR
 
 
 MODEL_FP = (
     LOCAL_DIR
-    + "contextualized-shot-quality-analysis/data/experiments/__runs__/result-noise-cls/nba_result_cls_1k_32_frames_224/checkpoints/checkpoint_epoch_00020.pyth"
+    + "contextualized-shot-quality-analysis/data/experiments/__runs__/result-noise-cls/nba_result_cls_3k_32_frames_224/checkpoints/checkpoint_epoch_00020.pyth"
 )
+
+# fps for original and truncated video
+FPS = 30
+
+# temp clip start time: timestamp (given by logs) - 5.0s
 TEMP_SHOT_OFFSET_SEC = 5
-TEMP_SHOT_DURATION_SEC = 8
+
+# duration of temp clip
+TEMP_SHOT_DURATION_SEC = 7
+
+# duration of final truncated clip
 OUT_SHOT_DURATION_SEC = 4
-OUT_SHOT_OFFSET_SEC = 1  # truncate 1.5s before max_conf
+
+# truncate original video 1.0s before max_conf timestamp
+OUT_SHOT_OFFSET_SEC = 1
+
+MADE_SHOT_SUBDIR = "made"
+MISSED_SHOT_SUBDIR = "missed"
+GARBAGE_SUBDIR = "garbage"
+
+# length of inputs processed by TimeSformer model
+MODEL_NUM_FRAMES = 32
+
+# total frame count of temp vid
+TEMP_VID_NUM_FRAMES = int(TEMP_SHOT_DURATION_SEC * FPS)
 
 STEP = 5
 SIGMA = 9
@@ -41,7 +64,7 @@ def run_parallel_job(
             )
             processes.append(process)
         for process in concurrent.futures.as_completed(processes):
-            print(process.result())
+            process.result()
 
 
 def extract_result_hidden_shots_from_map(
@@ -95,7 +118,13 @@ def _process_video_log_pair_result_hidden(
     )
 
 
-def _extract_shots_result_hidden(dst_dir: str, shot_attempts: pd.DataFrame, video_fp: str, device:int=0, timesformer_model=None):
+def _extract_shots_result_hidden(
+    dst_dir: str,
+    shot_attempts: pd.DataFrame,
+    video_fp: str,
+    device: int = 0,
+    timesformer_model=None,
+):
     """
     Extract all shots from `shot-attempts`, find moment of shot-release, and save a truncated
     shot attempts to `dst_dir`.
@@ -108,12 +137,16 @@ def _extract_shots_result_hidden(dst_dir: str, shot_attempts: pd.DataFrame, vide
         model (optional): The model to use for processing video frames. Defaults to None.
     """
 
-    period = int(video_fp.split('_period')[1].split('.mp4')[0])
-    game_id = os.path.basename(video_fp).split('_')[0]
-    shot_attempts_for_period = shot_attempts[shot_attempts['half'] == period]
+    period = int(video_fp.split("_period")[1].split(".mp4")[0])
+    game_id = os.path.basename(video_fp).split("_")[0]
+    shot_attempts_for_period = shot_attempts[shot_attempts["half"] == period]
 
-    for _, row in(shot_attempts_for_period.iterrows()):
-        subdir = MADE_SUBDIR if '+' in row.action_name else MISSED_SUBDIR if '-' in row.action_name else None
+    for _, row in shot_attempts_for_period.iterrows():
+        subdir = (
+            MADE_SUBDIR
+            if "+" in row.action_name
+            else MISSED_SUBDIR if "-" in row.action_name else None
+        )
         if subdir is None:
             continue
 
@@ -125,25 +158,28 @@ def _extract_shots_result_hidden(dst_dir: str, shot_attempts: pd.DataFrame, vide
             outpath = os.path.join(dst_dir, subdir, clip_name)
             if os.path.isfile(outpath):
                 return
-            
+
         start_time = row.second - TEMP_SHOT_OFFSET_SEC
         probe = ffmpeg.probe(video_fp)
-        video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'), None)
-        
+        video_stream = next(
+            (stream for stream in probe["streams"] if stream["codec_type"] == "video"),
+            None,
+        )
+
         if not video_stream:
             raise ValueError("No video stream found in the input file.")
-        aspect_ratio = int(video_stream['width']) / int(video_stream['height'])
+        aspect_ratio = int(video_stream["width"]) / int(video_stream["height"])
 
         # 1. save a noisy shot-attempt clip
         save_shot_clip(
-            video_fp, 
-            dst_path, 
-            start_time, 
-            TEMP_SHOT_DURATION_SEC, 
-            height=TARGET_HEIGHT, 
-            aspect_ratio=aspect_ratio
-            )
-        
+            video_fp,
+            dst_path,
+            start_time,
+            TEMP_SHOT_DURATION_SEC,
+            height=TARGET_HEIGHT,
+            aspect_ratio=aspect_ratio,
+        )
+
         video_tensor = read_video_to_tensor_buffer(dst_path, device=device)
         if video_tensor is None:
             continue
@@ -151,12 +187,12 @@ def _extract_shots_result_hidden(dst_dir: str, shot_attempts: pd.DataFrame, vide
         # remove the noisy clip
         os.remove(dst_path)
 
-        conf_scores, timestamps, = pred_conf_scores(
-            video_tensor, 
-            device=device, 
-            model=timesformer_model, 
-            step_size=STEP
-            )
+        (
+            conf_scores,
+            timestamps,
+        ) = pred_conf_scores(
+            video_tensor, device=device, model=timesformer_model, step_size=STEP
+        )
         max_idx = get_highest_conf_idx(conf_scores, sigma=2)
         # print(f"Max conf idx: {max_idx}")
 
@@ -168,11 +204,14 @@ def _extract_shots_result_hidden(dst_dir: str, shot_attempts: pd.DataFrame, vide
 
         adj_idx = STEP * max_idx
         subdir = ""
-        if '+' in dst_path:
+        if "+" in dst_path:
             subdir = MADE_SHOT_SUBDIR
-        elif '-' in dst_path:
+        elif "-" in dst_path:
             subdir = MISSED_SHOT_SUBDIR
-        if adj_idx <= MIN_FRAMES or adj_idx > 240 - MIN_FRAMES:
+        if (
+            adj_idx <= MODEL_NUM_FRAMES
+            or adj_idx > TEMP_VID_NUM_FRAMES - MODEL_NUM_FRAMES
+        ):
             subdir = GARBAGE_SUBDIR
 
         name = os.path.basename(dst_path)
@@ -181,33 +220,34 @@ def _extract_shots_result_hidden(dst_dir: str, shot_attempts: pd.DataFrame, vide
         try:
             # 2. save a corrected clip
             save_shot_clip(
-                video_fp, 
-                new_dst_path, 
-                new_start_time, 
-                OUT_SHOT_DURATION_SEC, 
-                height=TARGET_HEIGHT, 
-                aspect_ratio=aspect_ratio
-                )
+                video_fp,
+                new_dst_path,
+                new_start_time,
+                OUT_SHOT_DURATION_SEC,
+                height=TARGET_HEIGHT,
+                aspect_ratio=aspect_ratio,
+            )
         except:
             print(f"Error processing video at {dst_path}")
             continue
 
 
 def main():
-    
+
     dst_dir = (
         LOCAL_DIR
-        + "contextualized-shot-quality-analysis/data/experiments/test-sets/result-hidden/result_hidden_test_nba_1k_4s"
+        + "contextualized-shot-quality-analysis/data/experiments/result-hidden/nba_results_hidden_?k"
     )
     hudl_logs_dir = (
         LOCAL_DIR
-        + "contextualized-shot-quality-analysis/data/nba/test-set/hudl-game-logs"
+        + "contextualized-shot-quality-analysis/data/nba/result-hidden-split/hudl-game-logs"
     )
     nba_replays_dir = (
-        LOCAL_DIR + "contextualized-shot-quality-analysis/data/nba/test-set/replays"
+        LOCAL_DIR
+        + "contextualized-shot-quality-analysis/data/nba/result-hidden-split/replays"
     )
 
-    run_parallel_job(dst_dir, hudl_logs_dir, nba_replays_dir, num_devices=1)
+    run_parallel_job(dst_dir, hudl_logs_dir, nba_replays_dir, num_devices=8)
 
 
 if __name__ == "__main__":
