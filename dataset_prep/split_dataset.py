@@ -2,98 +2,110 @@ import os
 import shutil
 import random
 
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
 
 FILE_SIZE_THRESH = 1
 MAX_THREADS = 1
 NUM_CLIPS = 50000
 
+
 def remove_small_files(files):
     """
-    Given a list of files, 
+    Given a list of files,
     remove all files under a threshold of 100kb
     """
 
     trunc_fps = []
     for file in files:
-        file_size = os.stat(file).st_size / 1000 # kbs
+        file_size = os.stat(file).st_size / 1000  # kbs
         if file_size < FILE_SIZE_THRESH:
             os.remove(file)
         else:
             trunc_fps.append(file)
     return trunc_fps
 
-def copy_file(args, progress=None):
+
+def copy_file(args, progress_bar=None):
     """
     Copy a single file from (src, dst)
     """
 
     src, dst = args
     shutil.copy2(src, dst)
-    # except Exception as e:
-    #     print(f"Error copying file from {src}.")
-    
-    # iterate the progress bar
-    if progress:
-        progress.update(1)
+    if progress_bar:
+        progress_bar.update(1)
 
-def split_dataset(src_dir, dst_dir, num_clips):
-    """
-    Given a path to a dir w/ 'made' and 'missed' subdirs,
-    split data into train/val/test subdirs with a ratio of
-    80/15/5 into the dst_dir
-    """
 
-    og_vid_fps = []
-    for root, _, files in os.walk(src_dir):
+def copy_and_split_dataset(
+    train_val_dir: str,
+    test_dir: str,
+    dst_dir: str,
+    num_files_to_copy: int,
+    class_split=None,
+):
+
+    # default 90/10 train/val
+    if class_split is None:
+        class_split = [0.9, 0.1]
+
+    all_src_file_paths = []
+    for root, _, files in os.walk(train_val_dir):
         for file in files:
-            if file.endswith('.mp4'):
-                fp = os.path.join(root, file)
-                og_vid_fps.append(fp)
+            if file.endswith(".mp4"):
+                file_path = os.path.join(root, file)
+                all_src_file_paths.append(file_path)
 
-    # remove all files under 100kb in size
-    og_vid_fps = remove_small_files(og_vid_fps)
-    split_dirs = ['train', 'val', 'test']
+    made_file_paths = []
+    missed_file_paths = []
+
+    for (
+        index,
+        src_file_path,
+    ) in enumerate(all_src_file_paths):
+        file_name = os.path.basename(src_file_path)
+        file_class = os.path.basename(os.path.dirname(src_file_path))
+
+        # a clever way of splitting exactly into 90/10 train/val
+        split_dir = "val" if index % int(class_split[0] * 10) == 0 else "train"
+        dst_file_path = os.path.join(dst_dir, split_dir, file_class, file_name)
+
+        if file_class == "made":
+            made_file_paths.append([src_file_path, dst_file_path])
+        elif file_class == "missed":
+            missed_file_paths.append([src_file_path, dst_file_path])
+
+    random.shuffle(made_file_paths)
+    random.shuffle(missed_file_paths)
+    all_copy_opperations = (
+        made_file_paths[0 : num_files_to_copy // 2]
+        + missed_file_paths[0 : num_files_to_copy // 2]
+    )
+
+    # add all file paths from the test folder
+    for root, _, files in os.walk(test_dir):
+        for file in files:
+            if file.endswith(".mp4"):
+                src_test_file_path = os.path.join(root, file)
+                file_name = os.path.basename(src_test_file_path)
+                file_class = os.path.basename(os.path.dirname(src_test_file_path))
+                split_dir = "test"
+                dst_test_file_path = os.path.join(
+                    dst_dir, split_dir, file_class, file_name
+                )
+                all_copy_opperations.append([src_test_file_path, dst_test_file_path])
+
+    split_dirs = ["train", "val", "test"]
 
     # make new train/val/test dirs
     os.makedirs(dst_dir, exist_ok=True)
-    for sd in split_dirs:
-        new_dir = os.path.join(dst_dir, sd)
+    for split_dir in split_dirs:
+        new_dir = os.path.join(dst_dir, split_dir)
         os.makedirs(new_dir, exist_ok=True)
+        os.makedirs(os.path.join(new_dir, "made"), exist_ok=True)
+        os.makedirs(os.path.join(new_dir, "missed"), exist_ok=True)
 
-        os.makedirs(os.path.join(new_dir, 'made'), exist_ok=True)
-        os.makedirs(os.path.join(new_dir, 'missed'), exist_ok=True)
-
-        # os.makedirs(os.path.join(new_dir, 'noise'), exist_ok=True)
-        # os.makedirs(os.path.join(new_dir, 'shot_result'), exist_ok=True)
-
-    # shuffle file paths
-    random.shuffle(og_vid_fps)
-    og_vid_fps = og_vid_fps[0:num_clips]
-
-    copy_ops = []
-    for fp in og_vid_fps:
-        seed = random.random()
-        name = fp.split('/')[-1]
-        split_dir = ''
-        cat = fp.split('/')[-2]
-        if seed < .8:
-            split_dir = 'train'
-        elif seed < .95:
-            split_dir = 'val'
-        else:
-            split_dir = 'test'
-
-        # new_fp = os.path.join(dst_dir, split_dir, cat, name)
-
-        # copy to made/missed folder, no split
-        new_fp = os.path.join(dst_dir, cat, name)
-        copy_ops.append((fp, new_fp))
-
-    progress = tqdm(total=len(copy_ops))
-
-    # copy each file in a different process pool
+    progress_bar = tqdm(total=len(all_copy_opperations))
     with ThreadPoolExecutor(max_workers=1) as executor:
-        for op in copy_ops:
-            executor.submit(copy_file, op, progress=progress)
+        for copy_operation in all_copy_opperations:
+            executor.submit(copy_file, copy_operation, progress_bar=progress_bar)
