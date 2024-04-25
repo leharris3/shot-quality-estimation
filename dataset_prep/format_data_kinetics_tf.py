@@ -1,5 +1,4 @@
 import os
-import csv
 import pandas as pd
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
@@ -11,7 +10,7 @@ def is_mp4_and_valid(file_path):
     if not file_path.endswith(".mp4"):
         return False
     try:
-        result = subprocess.run(
+        _ = subprocess.run(
             ["ffmpeg", "-i", file_path], stderr=subprocess.PIPE, stdout=subprocess.PIPE
         )
         return True
@@ -39,7 +38,7 @@ def clean_directory(dir_path):
         list(tqdm(executor.map(clean_file, files_to_check), total=len(files_to_check)))
 
 
-def format_dataset_kinetics(dir_path):
+def format_dataset_kinetics(dir_path: str):
     """
     Given a path to a dataset split into train/val/test subdirs,
     produce three files: train.csv, val.csv, test.csv.
@@ -71,9 +70,3 @@ def format_dataset_kinetics(dir_path):
             }
         )
         df.to_csv(csv_path, index=False, index_label=False, header=False, sep=" ")
-
-
-if __name__ == "__main__":
-    dir_path = "/playpen-storage/levlevi/contextualized-shot-quality-analysis/basketball-shot-detection/data/experiments/result-only/shot_results_nba_1k"
-    clean_directory(dir_path)
-    # format_dataset_kinetics(dir_path)
