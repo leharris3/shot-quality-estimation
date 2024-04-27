@@ -62,8 +62,9 @@ def find_local_min(array, thresh=MIN_CONF_THRESH):
             min_index = i
     return min_index
 
+
 def find_local_max(array, thresh=MIN_CONF_THRESH):
-    max_val = -1 
+    max_val = -1
     max_index = 0
     for i in range(len(array)):
         if array[i] > max_val and array[i] > thresh:
@@ -84,7 +85,6 @@ def pred_conf_scores(video_tensor, device, model, step_size: int = STEP):
 
     with torch.no_grad():
         for index in range(0, frame_increment, step_size):
-
             temp_video = video_tensor[:, :, index : index + VID_LEN_FRAMES, :, :]
             preds = model(temp_video)
             probs = torch.nn.functional.softmax(preds, dim=1)

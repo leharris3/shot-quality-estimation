@@ -1,5 +1,17 @@
+import os
+import concurrent
+import ffmpeg
+import pandas as pd
+
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
-from extract_rs_shots import *
+from extract_rs_shots import (
+    generate_file_paths,
+    map_logs_to_videos,
+    load_shot_attempts,
+    save_shot_clip,
+    MADE_SUBDIR,
+    MISSED_SUBDIR,
+)
 from truncate_clips_helpers import (
     get_model,
     read_video_to_tensor_buffer,
@@ -7,7 +19,7 @@ from truncate_clips_helpers import (
     get_highest_conf_idx,
 )
 from paths import LOCAL_DIR
-
+from timeout import function_with_timeout
 
 MODEL_FP = (
     LOCAL_DIR
@@ -38,6 +50,9 @@ MODEL_NUM_FRAMES = 32
 
 # total frame count of temp vid
 TEMP_VID_NUM_FRAMES = int(TEMP_SHOT_DURATION_SEC * FPS)
+
+# final output video height, og aspect ratio maintained
+TARGET_HEIGHT = 480
 
 STEP = 5
 SIGMA = 9
@@ -86,7 +101,7 @@ def extract_result_hidden_shots_from_map(
             process = executor.submit(_process_thread, dst_dir, subset, device, model)
             processes.append(process)
         for process in concurrent.futures.as_completed(processes):
-            print(process.result())
+            process.result()
 
 
 def _process_thread(dst_dir: str, logs_vids_mapped, device: int = 0, model=None):
@@ -236,7 +251,7 @@ def main():
 
     dst_dir = (
         LOCAL_DIR
-        + "contextualized-shot-quality-analysis/data/experiments/result-hidden/nba_results_hidden_?k"
+        + "contextualized-shot-quality-analysis/data/experiments/result-hidden/nba_results_hidden_26.7k_480"
     )
     hudl_logs_dir = (
         LOCAL_DIR
@@ -246,7 +261,6 @@ def main():
         LOCAL_DIR
         + "contextualized-shot-quality-analysis/data/nba/result-hidden-split/replays"
     )
-
     run_parallel_job(dst_dir, hudl_logs_dir, nba_replays_dir, num_devices=8)
 
 

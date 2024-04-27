@@ -13,7 +13,7 @@ MADE_SUBDIR = "made"
 MISSED_SUBDIR = "missed"
 SHOT_DURATION_TOTAL = 7  # total clip length is 7 seconds
 SHOT_DURATION_OFFSET_NEG = 5  # start clip 5 seconds before timestamps
-TARGET_HEIGHT = 224
+TARGET_HEIGHT = 480
 MAX_THREAD_POOL_WORKERS = 32
 
 
