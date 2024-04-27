@@ -43,11 +43,14 @@ def copy_and_split_dataset(
     dst_dir: str,
     num_files_to_copy: int,
     class_split=None,
+    class_balance=None,
 ):
 
     # default 90/10 train/val
     if class_split is None:
         class_split = [0.9, 0.1]
+    if class_balance is None:
+        class_balance = [0.5, 0.5]
 
     all_src_file_paths = []
     for root, _, files in os.walk(train_val_dir):
@@ -77,9 +80,11 @@ def copy_and_split_dataset(
 
     random.shuffle(made_file_paths)
     random.shuffle(missed_file_paths)
+
+    # copy clips proptional to class balance: [made, missed]
     all_copy_opperations = (
-        made_file_paths[0 : num_files_to_copy // 2]
-        + missed_file_paths[0 : num_files_to_copy // 2]
+        made_file_paths[0 : int(class_balance[0] * num_files_to_copy)]
+        + missed_file_paths[0 : int(class_balance[1] * num_files_to_copy)]
     )
 
     # add all file paths from the test folder
