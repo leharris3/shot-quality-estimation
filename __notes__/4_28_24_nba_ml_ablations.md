@@ -37,9 +37,31 @@ model | league | shot-result| train samples | test samples |
 | Balanced | 50.00 | 50.00 |
 | Imbalanced | 44.65 | 55.35 |
 
+## Experiments
+
 | train set | test set | test acc |  test acc - maj cls |
 | :---: | :---: | :---: | :---: |
-| balanced | balanced | 55.00 | 5.00 |  
-| balanced | imbalanced | 54.30 | -1.05 |  
-| imbalanced | balanced | **57.90** | **7.90** |  
-| imbalanced | imbalanced | 56.65 | 1.30 |  
+| balanced | balanced | 53.10 |  |  
+| balanced | imbalanced | 58.60 |  |  
+| imbalanced | balanced | 53.10 |  |  
+| imbalanced | imbalanced | **59.30** |  |  
+
+# ***ablation:*** model variants
+
+| league | shot-result| train samples | test samples | train-set | test-set |
+| :---: | :---: | :---: | :---: | :---: | :---: |
+|  NBA 15-16 | hidden | 9000 | 1000 | imbalanced | balanced |
+
+| condition | % made | % missed |
+| --- | --- | --- |
+| Balanced | 50.00 | 50.00 |
+| Imbalanced | 44.65 | 55.35 |
+
+## Experiments
+
+| model | test acc |  test acc - maj cls |
+| :---: | :---: | :---: |
+| Logisitic Regression | 57.90 |  |
+| Ridge Classifier | 59.20 |  |
+| AdaBoost | 59.60 |  |
+| Gradient Boosting | **61.60** | |
