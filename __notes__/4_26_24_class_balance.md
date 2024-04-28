@@ -4,7 +4,7 @@
 
 | model | checkpoint | league | shot-result| train clips | val clips | test clips  
 | --- | --- | --- | --- | --- | --- | --- | 
-TimeSFormer | Kinetics-600 | NBA 15-16 | hidden | 2700 | 300 | 500 |
+TimeSFormer | Kinetics-600 | NBA 15-16 | hidden | 4500 | 500 | 500 |
 
 | epochs | input shape | train jitter scales | batch size (device) | clip-duration (sec) |
 | --- | --- | --- | --- | --- |
