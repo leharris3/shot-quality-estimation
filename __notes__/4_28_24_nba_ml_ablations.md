@@ -50,7 +50,7 @@ model | league | shot-result| train samples | test samples |
 
 | league | shot-result| train samples | test samples | train-set | test-set |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-|  NBA 15-16 | hidden | 9000 | 1000 | imbalanced | balanced |
+|  NBA 15-16 | hidden | 9000 | 1000 | imbalanced | imbalanced |
 
 | condition | % made | % missed |
 | --- | :---: | :---:|
@@ -66,3 +66,25 @@ model | league | shot-result| train samples | test samples |
 | Ridge Classifier | 59.20 | 3.85 |
 | AdaBoost | 59.60 | 4.25 |
 | Gradient Boosting | **61.60** | **6.25** |
+
+
+# **Ablation:** Scale
+
+| model | league | shot-result| test samples | train-set | test-set |
+| :---: | :---: | :---: | :---: | :---: | :---: |
+| Gradient Boosting |  NBA 15-16 | hidden | 1000 | imbalanced | imbalanced |
+
+| condition | % made | % missed |
+| --- | :---: | :---:|
+| Balanced | 50.00 | 50.00 |
+| Imbalanced | 44.65 | 55.35 |
+
+## Experiments
+
+| # samples | test acc |  test acc - maj cls |
+| :--- | :---: | :---: |
+| 100 | 50.30 | -5.05 |
+| 1000 | 57.90 | 2.55 |
+| 10000 | **62.10** | **6.75** |
+| 50000 | 61.50 | 6.15 |
+| 100000 | 61.80 | 6.45 |
