@@ -1,5 +1,7 @@
 # **Ablation:** Batch Size
 
+---
+
 ## **Setting**
 
 | model | checkpoint | league | train set | test set | shot-result| train clips | val clips | test clips |
