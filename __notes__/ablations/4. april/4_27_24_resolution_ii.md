@@ -2,13 +2,13 @@
 
 ## **Setting**
 
-| model | checkpoint | league | train set | test set | shot-result| train clips | val clips | test clips | coverage | 
-| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-TimeSFormer | Kinetics-600 | NBA 15-16 | balanced | imbalanced | hidden | 4500 | 500 | 500 | 100%
+| model | checkpoint | league | train set | test set | shot-result| train clips | val clips | test clips |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+TimeSFormer | Kinetics-600 | NBA 15-16 | balanced | imbalanced | hidden | 4500 | 500 | 500 |
 
-| epochs| batch size (device) | clip-duration (sec) | jitter width-height ratio |
-| :---: | :---: | :---: | :---: | 
-20 | 2.5 | 4 | $256/224$ ~ 1.142
+| epochs| # gpus | batch size (total) | # frames | sample rate |  clip-duration (sec) | jitter width-height ratio |
+| :---: | :---: | :---: | :---: |  :---: |  :---: |  :---: | 
+20 | 8 | 1.5 | 60 | 2 | 4 | $256/224$ ~ 1.142
 
 | condition | % made | % missed |
 | --- | :---: | :---:|

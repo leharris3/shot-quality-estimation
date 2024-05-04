@@ -21,7 +21,7 @@ TimeSFormer | Kinetics-600 | NBA 15-16 | balanced | imbalanced | hidden | 4500 |
 
 | # batch size | train err | train loss | val err | test acc | test acc - maj cls|
 | :---: | :---: | :---: | :---: | :---: | :---: | 
-| 20 | 0.591 | 45.371 | **55.71** | **1.00** |
-| 24 | --- | --- | --- | --- |
-| 28 | --- | --- | --- | --- |
-| 32 | OOM | OOM | OOM | OOM |OOM |
+| 20 | 31.888 | 0.591 | 45.371 | **55.71** | **1.0** |
+| 24 | 31.574 | 0.586 | 44.492 | 54.71 | 0.0 |
+| 28 | 31.329 | 0.586 | 44.928 | 54.11 | -0.6 |
+| 32 | OOM | OOM | OOM | OOM | OOM | OOM |
