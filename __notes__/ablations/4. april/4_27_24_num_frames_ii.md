@@ -4,9 +4,9 @@
 
 ## **Setting**
 
-| model | checkpoint | league | train set | test set | shot-result| train clips | val clips | test clips | coverage | 
-| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-TimeSFormer | Kinetics-600 | NBA 15-16 | balanced | imbalanced | hidden | 4500 | 500 | 500 | 100%
+| Model | Checkpoint | League | Train Set | Test Set | Shot-Result | Train Clips | Val Clips | Test Clips |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+TimeSFormer | Kinetics-600 | NBA 15-16 | Balanced | Balanced | Hidden | 4500 | 500 | 500 |
 
 | epochs | input res | train jitter scales | batch size (per device) | clip-duration (sec) |
 :---: | :---: | :---: | :---: | :---: |
