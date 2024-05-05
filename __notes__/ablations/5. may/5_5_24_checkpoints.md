@@ -1,0 +1,31 @@
+# **Ablation:** Checkpoints
+
+---
+
+## **Setting**
+
+| Model | Checkpoint | League | Train Set | Test Set | Shot-Result | Train Clips | Val Clips | Test Clips |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| TimeSFormer | Kinetics-600 | NBA 15-16 | Balanced | Imbalanced | Hidden | 4500 | 500 | 500 |
+
+| Train Crop Size | # Epochs | # Frames | Sample-Rate | OG Video Res | Jitter | Train Batch Size (Per Device) | Train Batch Size (Total) | Clip-Duration (Sec) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 224 | 20 | 60 | 2 | 853 x 480 | [224, 256] | 3 | 28 |  4 |
+
+| Test Batch Size (Total) | Test Crop Size | # Ensemble Views | 
+| :---: | :---: | :---: |
+| 64 | 224 | 1 |
+
+| Condition | % Made | % Missed |
+| :---: | :---: | :---: |
+| Balanced | 50.00 | 50.00 |
+| Imbalanced | 45.29 | 54.71 |
+
+---
+
+## **Experiments**
+
+| Checkpoint | Train Err | Train Loss | Val Err | Test Acc | Test Acc - Maj Cls |
+| :---: | :---: | :---: | :---: | :---: | :---: |
+| TimeSformer_divST_8x32_224_K600 | --- | --- | --- | --- | --- | 
+| Yulu 20-League Multi-Class | --- | --- | --- | --- | --- |

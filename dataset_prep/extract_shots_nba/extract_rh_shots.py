@@ -251,15 +251,15 @@ def main():
 
     dst_dir = (
         LOCAL_DIR
-        + "contextualized-shot-quality-analysis/data/experiments/result-hidden/nba_results_hidden_26.7k_480"
+        + "/contextualized-shot-quality-analysis/data/experiments/result-hidden/raw_clips/nba_results_hidden_30k_480"
     )
     hudl_logs_dir = (
         LOCAL_DIR
-        + "contextualized-shot-quality-analysis/data/nba/result-hidden-split/hudl-game-logs"
+        + "contextualized-shot-quality-analysis/data/nba/data/hudl-game-logs"
     )
     nba_replays_dir = (
         LOCAL_DIR
-        + "contextualized-shot-quality-analysis/data/nba/result-hidden-split/replays"
+        + "contextualized-shot-quality-analysis/data/nba/data/replays"
     )
     run_parallel_job(dst_dir, hudl_logs_dir, nba_replays_dir, num_devices=8)
 

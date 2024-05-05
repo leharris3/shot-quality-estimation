@@ -64,6 +64,11 @@ def save_shot_clip(
     """
 
     new_width = int(height * aspect_ratio)
+    
+    # ensure width is even multiple
+    if new_width % 2 != 0:
+        new_width += 1
+
     ffmpeg.input(video_path, ss=start_time, t=duration).filter(
         "scale", new_width, height
     ).output(dst_path).global_args("-loglevel", "error").run()
