@@ -22,5 +22,5 @@
 
 | Checkpoint | Train Err | Train Loss | Val Err | Test Acc | Test Acc - Maj Cls |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-| TimeSformer_divST_8x32_224_K600 | 31.888 | 0.591 | 45.371 | 54.60 | 4.60 |
-| Yulu 20-League Multi-Class | --- | --- | --- | --- | --- |
+| TimeSformer_divST_8x32_224_K600 | 31.888 | 0.591 | 45.371 | 53.20 | 3.20 |
+| Yulu 20-League Multi-Class | 40.632 | 0.659 | **42.757** | 53.20 | 3.20 |
