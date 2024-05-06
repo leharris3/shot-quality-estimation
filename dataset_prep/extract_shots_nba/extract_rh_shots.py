@@ -211,6 +211,12 @@ def _extract_shots_result_hidden(
         max_idx = get_highest_conf_idx(conf_scores, sigma=2)
         # print(f"Max conf idx: {max_idx}")
 
+        # shitty work around for list out of range err
+        try:
+            split_point_sec = timestamps[max_idx] - OUT_SHOT_OFFSET_SEC
+        except:
+            continue
+
         split_point_sec = timestamps[max_idx] - OUT_SHOT_OFFSET_SEC
         new_start_time = start_time + split_point_sec - OUT_SHOT_DURATION_SEC
 
