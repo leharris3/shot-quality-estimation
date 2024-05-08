@@ -147,7 +147,7 @@ def _extract_shots_result_hidden(
     Args:
         dst_dir (str): Directory where results will be saved.
         shot_attempts (DataFrame): DataFrame containing shot attempts data.
-        video_fp (str): File path to the video file.s
+        video_fp (str): File path to the video file.s`
         device (int, optional): Device ID for processing. Defaults to 0.
         model (optional): The model to use for processing video frames. Defaults to None.
     """
@@ -214,7 +214,8 @@ def _extract_shots_result_hidden(
         # shitty work around for list out of range err
         try:
             split_point_sec = timestamps[max_idx] - OUT_SHOT_OFFSET_SEC
-        except:
+        except ValueError as e:
+            print(e)
             continue
 
         split_point_sec = timestamps[max_idx] - OUT_SHOT_OFFSET_SEC
@@ -248,24 +249,49 @@ def _extract_shots_result_hidden(
                 height=TARGET_HEIGHT,
                 aspect_ratio=aspect_ratio,
             )
+            update_pbar(dst_dir)
         except:
             print(f"Error processing video at {dst_path}")
             continue
+
+
+def get_num_videos(dir_path: str):
+    """
+    Find the number of made + missed .mp4 files.
+    """
+
+    count = 0
+    for root, dirs, files in os.walk(dir_path):
+        for file in files:
+            fp = os.path.join(root, file)
+            pardir = os.path.pardir(fp)
+            if fp.endswith('.mp4') and (pardir == 'made' or pardir == 'missed'):
+                count += 1
+    return count
+
+
+def update_pbar(dir_path: str):
+    """
+    Update the progress bar.
+    """
+
+    count = get_num_videos(dir_path)
+    print(f"Processed {count} videos.", flush=True)
 
 
 def main():
 
     dst_dir = (
         LOCAL_DIR
-        + "/contextualized-shot-quality-analysis/data/experiments/result-hidden/raw_clips/nba_results_hidden_30k_480"
+        + "contextualized-shot-quality-analysis/data/experiments/test-sets/result-hidden/nba_1k_4s_raw_856x480"
     )
     hudl_logs_dir = (
         LOCAL_DIR
-        + "contextualized-shot-quality-analysis/data/nba/data/hudl-game-logs"
+        + "contextualized-shot-quality-analysis/data/nba/test-set/hudl-game-logs"
     )
     nba_replays_dir = (
         LOCAL_DIR
-        + "contextualized-shot-quality-analysis/data/nba/data/replays"
+        + "contextualized-shot-quality-analysis/data/nba/test-set/replays"
     )
     run_parallel_job(dst_dir, hudl_logs_dir, nba_replays_dir, num_devices=8)
 
