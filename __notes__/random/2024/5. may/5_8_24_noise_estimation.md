@@ -1,0 +1,12 @@
+- **Test Set Human Review**
+    - League: NBA 15-16
+    - Video Resolution: [865x480]
+    - Original Size: 1470
+    - Items Per Class [Made/Missed]: [735,735]
+    - Class: `Made`
+        - Original Size: 735
+        - After Human Review: 695
+    - Class: `Missed`
+        - Original Size: 735
+        - After Human Review: 652
+    - Total Noise: $123/1470 = 0.08367...$

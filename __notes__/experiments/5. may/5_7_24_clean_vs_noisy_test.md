@@ -14,7 +14,7 @@
 
 | League | Train Set | Test Set | Shot-Result | Train Clips | Val Clips | Test Clips |
  :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| NBA 15-16 | Balanced | Balanced | Hidden | 45000 | 5000 | 1300 |
+| NBA 15-16 | Balanced | Balanced | Hidden | 45000 | 5000 | 500 |
 
 #### Train Config
 
@@ -30,9 +30,10 @@
 
 ---
 
-## **Results**
+# Results
 
-| Epoch | Train Err | Train Loss | Val Err | Test Acc | Test Acc - Maj Cls |
-| :---: | :---: | :---: | :---: | :---: | :---: |
-| 20 | 42.26 | 0.664 | 44.32 | **54.15** | **4.15** |
-| 50 | 41.19 | 0.661 | 42.52 | 54.08 | 4.08 |
+| # Test Samples | Test Games OOD? | Manually Reviewed? | Test Acc | Test Acc - Maj Cls  | 
+| :---: | :---: | :---: | :---: | :---: |
+| 500 | :white_check_mark: | :white_check_mark: | 53.60 | 3.60 |
+| 1300 | :white_check_mark: | :x: | 55.77 | 5.77 |
+| 1300 | :white_check_mark: | :white_check_mark: | 54.07 | 4.07 |
