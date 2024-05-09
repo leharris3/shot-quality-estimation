@@ -1,4 +1,4 @@
-# **Experiment:** NBA 50K
+# **Ablation:** Performance on Different Test Sets
 
 ---
 
@@ -8,13 +8,13 @@
 
 | Model | Checkpoint |
 | :---: | :---: |
-| TimeSFormer | Yulu 20-League Multi-Class | 
+| TimeSFormer | Kinetics-600 | 
 
 #### Data
 
-| League | Train Set | Test Set | Shot-Result | Train Clips | Val Clips | Test Clips |
- :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| NBA 15-16 | Balanced | Balanced | Hidden | 45000 | 5000 | 500 |
+| League | Train Set | Test Set | Shot-Result | Train Clips |
+ :---: | :---: | :---: | :---: | :---: |
+| NBA 15-16 | Balanced | Balanced | Hidden | 4500 |
 
 #### Train Config
 
@@ -30,10 +30,10 @@
 
 ---
 
-# Results
+# Experiments
 
 | # Test Samples | Test Games OOD? | Manually Reviewed? | Test Acc | Test Acc - Maj Cls  | 
 | :---: | :---: | :---: | :---: | :---: |
-| 500 | :white_check_mark: | :white_check_mark: | 53.60 | 3.60 |
-| 1300 | :white_check_mark: | :x: | 55.77 | 5.77 |
-| 1300 | :white_check_mark: | :white_check_mark: | 54.07 | 4.07 |
+| 500 | :white_check_mark: | :white_check_mark: | 54.80 | 4.80 |
+| 1300 | :white_check_mark: | :x: | 54.31 | 4.31 |
+| 1300 | :white_check_mark: | :white_check_mark: | 53.77 | 3.77 |
