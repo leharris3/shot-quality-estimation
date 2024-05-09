@@ -6,7 +6,7 @@
 
 | Model | Checkpoint | League | Train Set | Test Set | Shot-Result | Train Clips | Val Clips | Test Clips |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-TimeSFormer | Kinetics-600 | NBA 15-16 | Balanced | Balanced | Hidden | 4500 | 500 | 500 |
+TimeSFormer | Kinetics-600 | NBA 15-16 | Balanced | Balanced | Hidden | 4500 | 1300 | 500 |
 
 | epochs | input res | train jitter scales | batch size (per device) | clip-duration (sec) |
 :---: | :---: | :---: | :---: | :---: |
@@ -21,11 +21,11 @@ TimeSFormer | Kinetics-600 | NBA 15-16 | Balanced | Balanced | Hidden | 4500 | 5
 
 ## **Experiments**
 
-| # frames | train err | train loss | val err | test acc | test acc - maj cls|
+| # Frames | Train Err | Train Loss | Val Err | Test Acc | Test Acc - Maj Cls|
 | :---: | :---: | :---: | :---: | :---: | :---: |
-| 8 | 35.456 | 0.620 | 44.17 | 54.20 | 4.20 | 
-| 15 | 33.167 | 0.604 | 44.797 | **54.80**| **4.80** |
-| 30 | 32.748 | 0.588 | 45.940 | 52.00 | 2.00 |
-| 40 | 31.169 | 0.584 | 45.828 | 52.00 | 2.00 | 
-| 60 | 31.888 | 0.591 | 45.371 | 54.60 | 4.60 |
-| 120 | OOM | OOM | OOM | OOM | OOM |
+| 8 | 35.456 | 0.620 | 44.170 | 52.15 | 2.15 | 
+| **15** | 33.167 | 0.604 | 44.797 | **53.77** | **3.77** | 
+| 30 | 32.748 | 0.588 | 45.940 | 51.85 | 1.85 | 
+| 40 | 31.169 | 0.584 | 45.828 | 51.54 | 1.54 | 
+| 60 | 31.888 | 0.591 | 45.371 | 52.46 | 2.46 | 
+| 120 | OOM | OOM | OOM | OOM | OOM | 
