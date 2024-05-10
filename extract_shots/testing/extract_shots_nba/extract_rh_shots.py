@@ -2,7 +2,9 @@ import os
 import concurrent
 import ffmpeg
 import pandas as pd
+import json
 
+from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 from extract_rs_shots import (
     generate_file_paths,
@@ -22,8 +24,7 @@ from paths import LOCAL_DIR
 from timeout import function_with_timeout
 
 MODEL_FP = (
-    LOCAL_DIR
-    + "contextualized-shot-quality-analysis/data/experiments/__runs__/result-noise-cls/nba_result_cls_3k_32_frames_224/checkpoints/checkpoint_epoch_00020.pyth"
+    "/playpen-storage/levlevi/contextualized-shot-quality-analysis/data/experiments/_timesformer_/__runs__/result-noise-cls/nba_result_cls_3k_32_frames_224/checkpoints/checkpoint_epoch_00020.pyth"
 )
 
 # fps for original and truncated video
@@ -265,20 +266,42 @@ def update_pbar(dir_path: str):
     print(f"Processed {count} videos.", flush=True)
 
 
+def predict_timestamps_dir(dir_path: str):
+
+    timesformer_model = get_model(MODEL_FP, device=0)
+
+    def get_all_src_paths_and_basenames(src_dir: str):
+        fps_names = []
+        for root, _, files in os.walk(src_dir):
+            for file in files:
+                if file.endswith('.mp4'):
+                    src_fp = os.path.join(root, file)
+                    fps_names.append((src_fp, file))
+        return fps_names
+    
+    preds = {}
+    src_paths_and_names = get_all_src_paths_and_basenames(dir_path)
+    for src_path, _ in tqdm(src_paths_and_names):
+        video_tensor = read_video_to_tensor_buffer(src_path, device=0)
+        (
+            conf_scores,
+            timestamps,
+        ) = pred_conf_scores(
+            video_tensor, device=0, model=timesformer_model, step_size=STEP
+        )
+        max_idx = get_highest_conf_idx(conf_scores, sigma=2)
+        preds[src_path] = max_idx
+
+    print(preds)
+    json_object = json.dumps(preds, indent=4)
+    with open("preds.json", "w") as outfile:
+        outfile.write(json_object)
+    
+
 def main():
 
-    dst_dir = (
-        LOCAL_DIR
-        + "contextualized-shot-quality-analysis/data/experiments/test-sets/result-hidden/nba_1k_4s_raw_856x480"
-    )
-    hudl_logs_dir = (
-        LOCAL_DIR
-        + "contextualized-shot-quality-analysis/data/nba/test-set/hudl-game-logs"
-    )
-    nba_replays_dir = (
-        LOCAL_DIR + "contextualized-shot-quality-analysis/data/nba/test-set/replays"
-    )
-    run_parallel_job(dst_dir, hudl_logs_dir, nba_replays_dir, num_devices=8)
+    test_dir = '/playpen-storage/levlevi/contextualized-shot-quality-analysis/shot-quality-estimation/extract_shots/testing/data/nba_uncut_300_7s'
+    predict_timestamps_dir(test_dir)
 
 
 if __name__ == "__main__":
