@@ -20,7 +20,7 @@
 
 | Train Crop Size | # Epochs | # Frames | Sample-Rate | OG Video Res | Jitter | Train Batch Size (Total) | Clip-Duration (Sec) |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| 224 | 50 | 15 | 8 | 853 x 480 | [224, 256] | 28 |  4 |
+| 224 | 20 | 60 | 2 | 853 x 480 | [224, 256] | 28 |  4 |
 
 #### Test Config
 
@@ -34,6 +34,6 @@
 
 | # Test Samples | Test Games OOD? | Manually Reviewed? | Test Acc | Test Acc - Maj Cls  | 
 | :---: | :---: | :---: | :---: | :---: |
-| 500 | :white_check_mark: | :white_check_mark: | 54.80 | 4.80 |
-| 1300 | :white_check_mark: | :x: | 54.31 | 4.31 |
-| 1300 | :white_check_mark: | :white_check_mark: | 53.77 | 3.77 |
+| 500 | :white_check_mark: | :white_check_mark: | 52.40 | 2.40 |
+| 1300 | :white_check_mark: | :x: | 53.07 | 3.07 |
+| 1300 | :white_check_mark: | :white_check_mark: | 52.46 | 2.46 |
