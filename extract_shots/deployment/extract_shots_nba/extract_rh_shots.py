@@ -38,8 +38,9 @@ TEMP_SHOT_DURATION_SEC = 7
 # duration of final truncated clip
 OUT_SHOT_DURATION_SEC = 4
 
-# truncate original video 1.0s before max_conf timestamp
-OUT_SHOT_OFFSET_SEC = 1
+# truncate original video 38 frames after max_conf timestamp
+# optimal split deterimined by some analysis done in the testing folder
+OUT_SHOT_OFFSET_SEC = (38 / 30)
 
 MADE_SHOT_SUBDIR = "made"
 MISSED_SHOT_SUBDIR = "missed"
@@ -213,12 +214,12 @@ def _extract_shots_result_hidden(
 
         # shitty work around for list out of range err
         try:
-            split_point_sec = timestamps[max_idx] - OUT_SHOT_OFFSET_SEC
+            split_point_sec = timestamps[max_idx] + OUT_SHOT_OFFSET_SEC
         except ValueError as e:
             print(e)
             continue
 
-        split_point_sec = timestamps[max_idx] - OUT_SHOT_OFFSET_SEC
+        split_point_sec = timestamps[max_idx] + OUT_SHOT_OFFSET_SEC
         new_start_time = start_time + split_point_sec - OUT_SHOT_DURATION_SEC
 
         # print(f"Splitting at: {split_point_sec}")
