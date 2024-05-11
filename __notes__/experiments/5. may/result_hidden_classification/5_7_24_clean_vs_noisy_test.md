@@ -30,7 +30,7 @@
 
 ---
 
-# Experiments
+## **Experiments**
 
 | # Test Samples | Test Games OOD? | Manually Reviewed? | Test Acc | Test Acc - Maj Cls  | 
 | :---: | :---: | :---: | :---: | :---: |
