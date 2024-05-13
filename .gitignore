@@ -1,2 +1,3 @@
 *.pyc
+*.gitignore
 extract_shots/testing
