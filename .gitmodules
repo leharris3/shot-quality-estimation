@@ -1,0 +1,3 @@
+[submodule "timesformer"]
+	path = timesformer
+	url = https://github.com/leharris3/timesformer

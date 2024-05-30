@@ -1,0 +1,10 @@
+pandas
+torchvision
+git+https://github.com/facebookresearch/fvcore
+simplejson
+einops
+timm
+psutil
+scikit-learn
+opencv-python
+tensorboard

@@ -1,3 +1,4 @@
+import tqdm
 import os
 import concurrent
 import ffmpeg
@@ -37,7 +38,7 @@ OUT_SHOT_DURATION_SEC = 4
 
 # truncate original video 10 frames after max_conf timestamp
 # optimal split deterimined by analysis done in the testing folder
-OUT_SHOT_OFFSET_SEC = 10 / 30
+OUT_SHOT_OFFSET_SEC = 20 / 30
 
 MADE_SHOT_SUBDIR = "made"
 MISSED_SHOT_SUBDIR = "missed"
@@ -47,8 +48,8 @@ GARBAGE_SUBDIR = "garbage"
 MODEL_NUM_FRAMES = 32
 
 OUT_SHOT_OFFSET_NUM_FRAMES = 10
-LOW_NOISE_IDX = 0
-HIGH_NOISE_IDX = 100
+LOW_NOISE_IDX = 20
+HIGH_NOISE_IDX = 120
 
 # total frame count of temp vid
 TEMP_VID_NUM_FRAMES = int(TEMP_SHOT_DURATION_SEC * FPS)
@@ -56,8 +57,8 @@ TEMP_VID_NUM_FRAMES = int(TEMP_SHOT_DURATION_SEC * FPS)
 # final output video height, og aspect ratio maintained
 TARGET_HEIGHT = 480
 
-STEP = 5
-SIGMA = 9
+STEP = 6
+SIGMA = 4
 THREADS = 1
 
 
@@ -158,7 +159,7 @@ def extract_shots_result_hidden(
     game_id = os.path.basename(video_fp).split("_")[0]
     shot_attempts_for_period = shot_attempts[shot_attempts["half"] == period]
 
-    for _, row in shot_attempts_for_period.iterrows():
+    for _, row in tqdm.tqdm(shot_attempts_for_period.iterrows()):
         subdir = (
             MADE_SUBDIR
             if "+" in row.action_name
@@ -188,7 +189,7 @@ def extract_shots_result_hidden(
             raise ValueError("No video stream found in the input file.")
         aspect_ratio = int(video_stream["width"]) / int(video_stream["height"])
 
-        # 1. Save an uncut shot-attempt clip
+        # 1. save an uncut shot-attempt clip
         save_shot_clip(
             video_fp,
             dst_path,
@@ -240,7 +241,7 @@ def extract_shots_result_hidden(
         name = os.path.basename(dst_path)
         new_dst_path = os.path.join(dst_dir, subdir, name)
 
-        # 2. Save the truncated shot-attempt.
+        # 2. save the truncated shot-attempt.
         try:
             save_shot_clip(
                 video_fp,
@@ -255,33 +256,9 @@ def extract_shots_result_hidden(
             continue
 
 
-def get_num_videos(dir_path: str):
-    """
-    Find the number of made + missed .mp4 files.
-    """
-
-    count = 0
-    for root, dirs, files in os.walk(dir_path):
-        for file in files:
-            fp = os.path.join(root, file)
-            pardir = os.path.pardir(fp)
-            if fp.endswith(".mp4") and (pardir == "made" or pardir == "missed"):
-                count += 1
-    return count
-
-
-def update_pbar(dir_path: str):
-    """
-    Update the progress bar.
-    """
-
-    count = get_num_videos(dir_path)
-    print(f"Processed {count} videos.", flush=True)
-
-
 def main():
 
-    dst_dir = "/mnt/opr/levlevi/contextualized-shot-quality-analysis/data/experiments/train-sets/result-hidden/raw_clips/05_11_24_B1_offset_+10"
+    dst_dir = "/mnt/opr/levlevi/contextualized-shot-quality-analysis/data/experiments/train-sets/result-hidden/raw_clips/05_13_24_D1_nba_5k_4s"
     hudl_logs_dir = "/mnt/opr/levlevi/contextualized-shot-quality-analysis/data/data-sources/nba/data/hudl-game-logs"
     nba_replays_dir = "/mnt/opr/levlevi/contextualized-shot-quality-analysis/data/data-sources/nba/data/replays"
     run_parallel_job(dst_dir, hudl_logs_dir, nba_replays_dir, num_devices=8)
