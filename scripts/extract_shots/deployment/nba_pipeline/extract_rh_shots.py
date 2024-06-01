@@ -1,114 +1,67 @@
-import tqdm
+from tqdm import tqdm
 import os
 import concurrent
-import ffmpeg
 import pandas as pd
 
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
+
 from extract_rs_shots import (
     generate_file_paths,
     map_logs_to_videos,
     load_shot_attempts,
-    save_shot_clip,
-    MADE_SUBDIR,
-    MISSED_SUBDIR,
 )
 from truncate_clips_helpers import (
     get_model,
-    read_video_to_tensor_buffer,
-    pred_conf_scores,
-    get_highest_conf_idx,
 )
 from timeout import function_with_timeout
+from utils import get_video_aspect_ratio, get_shot_subdir, shot_exists, save_and_process_shot
+from config import *
 
-MODEL_FP = "/playpen-storage/levlevi/contextualized-shot-quality-analysis/data/experiments/_timesformer_/__runs__/result-noise-cls/nba_result_cls_3k_32_frames_224/checkpoints/checkpoint_epoch_00020.pyth"
-
-# fps for original and truncated video
-FPS = 30
-
-# temp clip start time: timestamp (given by logs) - 5.0s
-TEMP_SHOT_OFFSET_SEC = 5
-
-# duration of temp clip
-TEMP_SHOT_DURATION_SEC = 7
-
-# duration of final truncated clip
-OUT_SHOT_DURATION_SEC = 4
-
-# truncate original video 20 frames after max_conf timestamp
-# optimal split deterimined by analysis done in the testing folder
-OUT_SHOT_OFFSET_SEC = 20 / 30
-
-MADE_SHOT_SUBDIR = "made"
-MISSED_SHOT_SUBDIR = "missed"
-GARBAGE_SUBDIR = "garbage"
-
-# length of inputs processed by TimeSformer model
-MODEL_NUM_FRAMES = 32
-
-OUT_SHOT_OFFSET_NUM_FRAMES = 20
-LOW_NOISE_IDX = 20
-HIGH_NOISE_IDX = 210 - (120)
-
-# total frame count of temp vid
-TEMP_VID_NUM_FRAMES = int(TEMP_SHOT_DURATION_SEC * FPS)
-
-# final output video height, og aspect ratio maintained
-TARGET_HEIGHT = 480
-
-STEP = 6
-SIGMA = 4
-THREADS = 1
-
-
-def run_parallel_job(
-    dst_dir: str, hudl_logs_dir: str, videos_dir: str, num_devices: int = 1
-):
+def run_parallel_job(dst_dir: str, hudl_logs_dir: str, videos_dir: str, num_devices: int = 1):
+    if not os.path.isdir(dst_dir):
+        raise ValueError(f"Destination directory {dst_dir} does not exist.")
+    if not os.path.isdir(hudl_logs_dir):
+        raise ValueError(f"Hudl logs directory {hudl_logs_dir} does not exist.")
+    if not os.path.isdir(videos_dir):
+        raise ValueError(f"Videos directory {videos_dir} does not exist.")
+    if num_devices <= 0:
+        raise ValueError("Number of devices must be greater than zero.")
     
     log_fps = generate_file_paths(hudl_logs_dir)
     videos_fps = generate_file_paths(videos_dir)
     logs_vids_mapped = map_logs_to_videos(videos_fps, log_fps)
-    num_vids_per_device = len(logs_vids_mapped) // num_devices
+    total_videos = len(logs_vids_mapped)
+
+    if total_videos == 0:
+        raise ValueError("No videos to process.")
+    
+    num_vids_per_device = (total_videos + num_devices - 1) // num_devices
+    models = [get_model(device=device, model_path=MODEL_FP) for device in range(num_devices)]
 
     with ThreadPoolExecutor(max_workers=num_devices) as executor:
         processes = []
+        pbar = tqdm(total=total_videos, desc="Processing Videos")  # Initialize progress bar
         for device in range(num_devices):
             start_idx = device * num_vids_per_device
-            end_idx = min(start_idx + num_vids_per_device, len(logs_vids_mapped))
+            end_idx = min(start_idx + num_vids_per_device, total_videos)
             subset = logs_vids_mapped[start_idx:end_idx]
-            process = executor.submit(
-                extract_result_hidden_shots_from_map, dst_dir, subset, device
-            )
-            processes.append(process)
+            if subset:  # Only submit if there are items to process
+                model = models[device % len(models)]
+                process = executor.submit(process_thread, dst_dir, subset, device, model, pbar)
+                processes.append(process)
         for process in concurrent.futures.as_completed(processes):
             process.result()
+        pbar.close()  # Close the progress bar when done
 
 
-def extract_result_hidden_shots_from_map(
-    dst_dir: str, logs_vids_mapped, device: int = 0, num_workers=THREADS
-):
-    """
-    Extracts uniform length shot-attempt clips with the shot-result hidden.
-    """
-
-    num_vids_per_worker = len(logs_vids_mapped) // num_workers
-    with ThreadPoolExecutor(max_workers=num_workers) as executor:
-        processes = []
-        for worker in range(num_workers):
-            start_idx = worker * num_vids_per_worker
-            end_idx = min(start_idx + num_vids_per_worker, len(logs_vids_mapped))
-            subset = logs_vids_mapped[start_idx:end_idx]
-
-            model = get_model(device=device, model_path=MODEL_FP)
-            process = executor.submit(process_thread, dst_dir, subset, device, model)
-            processes.append(process)
-        for process in concurrent.futures.as_completed(processes):
-            process.result()
-
-
-def process_thread(dst_dir: str, logs_vids_mapped, device: int = 0, model=None):
+def process_thread(dst_dir: str, logs_vids_mapped, device: int = 0, model=None, pbar=None):
+    if not model:
+        raise ValueError("Model cannot be None.")
+    
     for video_fp, log_fp in logs_vids_mapped:
         process_video_log_pair_result_hidden(dst_dir, video_fp, log_fp, device, model)
+        if pbar:
+            pbar.update(1)  # Update the progress bar
 
 
 def process_video_log_pair_result_hidden(
@@ -134,15 +87,9 @@ def process_video_log_pair_result_hidden(
     )
 
 
-def extract_shots_result_hidden(
-    dst_dir: str,
-    shot_attempts: pd.DataFrame,
-    video_fp: str,
-    device: int = 0,
-    timesformer_model=None,
-):
+def extract_shots_result_hidden(dst_dir: str, shot_attempts: pd.DataFrame, video_fp: str, device: int = 0, model=None):
     """
-    Extract all shots from `shot-attempts`, find moment of shot-release, and save a truncated
+    Extract all shots from `shot_attempts`, find the moment of shot-release, and save truncated
     shot attempts to `dst_dir`.
 
     Args:
@@ -152,115 +99,27 @@ def extract_shots_result_hidden(
         device (int, optional): GPU ID for processing. Defaults to 0.
         model (optional): The model to use for processing video frames. Defaults to None.
     """
-
     period = int(video_fp.split("_period")[1].split(".mp4")[0])
     game_id = os.path.basename(video_fp).split("_")[0]
     shot_attempts_for_period = shot_attempts[shot_attempts["half"] == period]
 
-    for _, row in tqdm.tqdm(shot_attempts_for_period.iterrows()):
-        subdir = (
-            MADE_SUBDIR
-            if "+" in row.action_name
-            else MISSED_SUBDIR if "-" in row.action_name else None
-        )
+    for _, row in tqdm(shot_attempts_for_period.iterrows(), total=shot_attempts_for_period.shape[0], desc="Processing Shots"):
+        subdir = get_shot_subdir(row.action_name)
         if subdir is None:
             continue
 
         clip_name = f"{game_id}_{row.action_id}_{row.action_name}_{row.second}.mp4"
         dst_path = os.path.join(dst_dir, subdir, clip_name)
 
-        # skip existing shots
-        for subdir in [MADE_SHOT_SUBDIR, MISSED_SHOT_SUBDIR, GARBAGE_SUBDIR]:
-            outpath = os.path.join(dst_dir, subdir, clip_name)
-            if os.path.isfile(outpath):
-                return
+        if shot_exists(dst_dir, clip_name):
+            continue
 
-        # get some info about the src game video
         start_time = row.second - TEMP_SHOT_OFFSET_SEC
-        probe = ffmpeg.probe(video_fp)
-        video_stream = next(
-            (stream for stream in probe["streams"] if stream["codec_type"] == "video"),
-            None,
-        )
 
-        if not video_stream:
-            raise ValueError("No video stream found in the input file.")
-        aspect_ratio = int(video_stream["width"]) / int(video_stream["height"])
-
-        # 1. save an uncut shot-attempt clip
-        save_shot_clip(
-            video_fp,
-            dst_path,
-            start_time,
-            TEMP_SHOT_DURATION_SEC,
-            height=TARGET_HEIGHT,
-            aspect_ratio=aspect_ratio,
-        )
-
-        # read the video into a buffer
-        video_tensor = read_video_to_tensor_buffer(dst_path, device=device)
-        if video_tensor is None:
-            continue
-
-        # remove the temp clip
-        os.remove(dst_path)
-
-        (
-            conf_scores,
-            timestamps,
-        ) = pred_conf_scores(
-            video_tensor, device=device, model=timesformer_model, step_size=STEP
-        )
-        max_idx = get_highest_conf_idx(conf_scores, sigma=2)
-
-        # shitty work around for list out of range err
         try:
-            split_point_sec = timestamps[max_idx] + OUT_SHOT_OFFSET_SEC
+            aspect_ratio = get_video_aspect_ratio(video_fp)
         except ValueError as e:
-            print(f"{e} \n Skipping shot with id: {clip_name}")
+            print(f"{e} \n Error processing video at {video_fp}")
             continue
 
-        # offset the out clip by a constant value
-        split_point_sec = timestamps[max_idx] + OUT_SHOT_OFFSET_SEC
-        new_start_time = start_time + split_point_sec - OUT_SHOT_DURATION_SEC
-
-        # determine if the out clip meets the critera to be considered noise
-        adj_idx = (STEP * max_idx) + OUT_SHOT_OFFSET_NUM_FRAMES
-        subdir = ""
-        if "+" in row.action_name:
-            subdir = MADE_SHOT_SUBDIR
-        elif "-" in row.action_name:
-            subdir = MISSED_SHOT_SUBDIR
-        if adj_idx <= (LOW_NOISE_IDX) or adj_idx >= TEMP_VID_NUM_FRAMES - (
-            HIGH_NOISE_IDX
-        ):
-            subdir = GARBAGE_SUBDIR
-
-        name = os.path.basename(dst_path)
-        new_dst_path = os.path.join(dst_dir, subdir, name)
-
-        # 2. save the truncated shot-attempt.
-        try:
-            save_shot_clip(
-                video_fp,
-                new_dst_path,
-                new_start_time,
-                OUT_SHOT_DURATION_SEC,
-                height=TARGET_HEIGHT,
-                aspect_ratio=aspect_ratio,
-            )
-        except Exception as e:
-            print(f"{e} \n Error processing video at {dst_path}")
-            continue
-
-
-def main():
-
-    dst_dir = "/playpen-storage/levlevi/contextualized-shot-quality-analysis/data/experiments/train-sets/result-hidden/raw_clips/05_31_24_mean_err_30"
-    hudl_logs_dir = "/mnt/sun/levlevi/nba-plus-statvu-dataset/hudl-game-logs"
-    nba_replays_dir = "/mnt/sun/levlevi/nba-plus-statvu-dataset/game-replays"
-    run_parallel_job(dst_dir, hudl_logs_dir, nba_replays_dir, num_devices=8)
-
-
-if __name__ == "__main__":
-    main()
+        save_and_process_shot(video_fp, dst_path, start_time, aspect_ratio, row, dst_dir, device, model)
