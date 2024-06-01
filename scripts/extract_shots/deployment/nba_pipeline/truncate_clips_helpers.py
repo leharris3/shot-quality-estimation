@@ -14,7 +14,7 @@ from scipy.ndimage import gaussian_filter1d
 NUM_FRAMES = 32
 MIN_FRAMES = 32
 CUDA_DEVICE = 0
-MIN_CONF_THRESH = 0.5
+MIN_CONF_THRESH = 0.17
 
 MADE_SHOT_SUBDIR = "made"
 MISSED_SHOT_SUBDIR = "missed"

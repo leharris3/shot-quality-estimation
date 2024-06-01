@@ -19,10 +19,9 @@ from truncate_clips_helpers import (
     pred_conf_scores,
     get_highest_conf_idx,
 )
-from paths import LOCAL_DIR
 from timeout import function_with_timeout
 
-MODEL_FP = "/mnt/opr/levlevi/contextualized-shot-quality-analysis/data/experiments/_timesformer_/__runs__/result-noise-cls/nba_result_cls_3k_32_frames_224/checkpoints/checkpoint_epoch_00020.pyth"
+MODEL_FP = "/playpen-storage/levlevi/contextualized-shot-quality-analysis/data/experiments/_timesformer_/__runs__/result-noise-cls/nba_result_cls_3k_32_frames_224/checkpoints/checkpoint_epoch_00020.pyth"
 
 # fps for original and truncated video
 FPS = 30
@@ -36,7 +35,7 @@ TEMP_SHOT_DURATION_SEC = 7
 # duration of final truncated clip
 OUT_SHOT_DURATION_SEC = 4
 
-# truncate original video 10 frames after max_conf timestamp
+# truncate original video 20 frames after max_conf timestamp
 # optimal split deterimined by analysis done in the testing folder
 OUT_SHOT_OFFSET_SEC = 20 / 30
 
@@ -47,9 +46,9 @@ GARBAGE_SUBDIR = "garbage"
 # length of inputs processed by TimeSformer model
 MODEL_NUM_FRAMES = 32
 
-OUT_SHOT_OFFSET_NUM_FRAMES = 10
+OUT_SHOT_OFFSET_NUM_FRAMES = 20
 LOW_NOISE_IDX = 20
-HIGH_NOISE_IDX = 120
+HIGH_NOISE_IDX = 210 - (120)
 
 # total frame count of temp vid
 TEMP_VID_NUM_FRAMES = int(TEMP_SHOT_DURATION_SEC * FPS)
@@ -65,13 +64,13 @@ THREADS = 1
 def run_parallel_job(
     dst_dir: str, hudl_logs_dir: str, videos_dir: str, num_devices: int = 1
 ):
-
+    
     log_fps = generate_file_paths(hudl_logs_dir)
     videos_fps = generate_file_paths(videos_dir)
     logs_vids_mapped = map_logs_to_videos(videos_fps, log_fps)
     num_vids_per_device = len(logs_vids_mapped) // num_devices
 
-    with ProcessPoolExecutor(max_workers=num_devices) as executor:
+    with ThreadPoolExecutor(max_workers=num_devices) as executor:
         processes = []
         for device in range(num_devices):
             start_idx = device * num_vids_per_device
@@ -108,7 +107,6 @@ def extract_result_hidden_shots_from_map(
 
 
 def process_thread(dst_dir: str, logs_vids_mapped, device: int = 0, model=None):
-
     for video_fp, log_fp in logs_vids_mapped:
         process_video_log_pair_result_hidden(dst_dir, video_fp, log_fp, device, model)
 
@@ -258,9 +256,9 @@ def extract_shots_result_hidden(
 
 def main():
 
-    dst_dir = "/mnt/opr/levlevi/contextualized-shot-quality-analysis/data/experiments/train-sets/result-hidden/raw_clips/05_13_24_D1_nba_5k_4s"
-    hudl_logs_dir = "/mnt/opr/levlevi/contextualized-shot-quality-analysis/data/data-sources/nba/data/hudl-game-logs"
-    nba_replays_dir = "/mnt/opr/levlevi/contextualized-shot-quality-analysis/data/data-sources/nba/data/replays"
+    dst_dir = "/playpen-storage/levlevi/contextualized-shot-quality-analysis/data/experiments/train-sets/result-hidden/raw_clips/05_31_24_mean_err_30"
+    hudl_logs_dir = "/mnt/sun/levlevi/nba-plus-statvu-dataset/hudl-game-logs"
+    nba_replays_dir = "/mnt/sun/levlevi/nba-plus-statvu-dataset/game-replays"
     run_parallel_job(dst_dir, hudl_logs_dir, nba_replays_dir, num_devices=8)
 
 
