@@ -1,12 +1,10 @@
-import csv
 import os
 import pandas as pd
 import ffmpeg
 import concurrent.futures
 
-from tqdm import tqdm
-from paths import HUDL_LOGS_DIR, REPLAYS_DIR
-from timeout import function_with_timeout
+from utils.paths import HUDL_LOGS_DIR, REPLAYS_DIR
+from utils.timeout import function_with_timeout
 
 OUTDIR = "/playpen-storage/levlevi/contextualized-shot-quality-analysis/data/experiments/results-shown/result_shown_nba_?k"
 MADE_SUBDIR = "made"
@@ -159,34 +157,3 @@ def extract_shots(hudl_logs_fps: str, videos_fps: str):
             except Exception as e:
                 # print(f"Error processing a log")
                 pass
-
-
-def main():
-
-    hudl_logs_dir = "/playpen-storage/levlevi/contextualized-shot-quality-analysis/data/nba/result-shown-split/hudl-game-logs"
-    videos_dir = "/playpen-storage/levlevi/contextualized-shot-quality-analysis/data/nba/result-shown-split/replays"
-
-    hudl_logs_fps = generate_file_paths(hudl_logs_dir)
-    videos_fps = generate_file_paths(videos_dir)
-    logs_vids_paths = map_logs_to_videos(videos_fps, hudl_logs_fps)
-
-    with concurrent.futures.ThreadPoolExecutor(
-        max_workers=MAX_THREAD_POOL_WORKERS
-    ) as executor:
-        futures = []
-        for video_path, log_path in logs_vids_paths:
-            future = executor.submit(
-                process_video_log_pair,
-                video_path,
-                log_path,
-            )
-            futures.append(future)
-        for future in concurrent.futures.as_completed(futures):
-            try:
-                future.result()
-            except Exception as e:
-                pass
-
-
-if __name__ == "__main__":
-    main()

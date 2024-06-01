@@ -244,22 +244,3 @@ def get_model(
     ).to(device)
     return model
 
-
-def main():
-    args = parse_args()
-    src_dir = args.src_dir
-    dst_dir = args.dst_dir
-    start_idx = int(args.start_idx)
-    end_idx = int(args.end_idx)
-    device = int(args.device)
-    split_all_shots_in_arr(
-        src_dir,
-        dst_dir,
-        start_idx,
-        end_idx,
-        device=device,
-    )
-
-
-if __name__ == "__main__":
-    main()

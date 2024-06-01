@@ -4,13 +4,13 @@ import ffmpeg
 from extract_rs_shots import (
     save_shot_clip,
 )
-from truncate_clips_helpers import (
+from utils.truncate import (
     read_video_to_tensor_buffer,
     pred_conf_scores,
     get_highest_conf_idx,
 )
 
-from config import *
+from utils.config import *
 
 def get_shot_subdir(action_name):
     if "+" in action_name:

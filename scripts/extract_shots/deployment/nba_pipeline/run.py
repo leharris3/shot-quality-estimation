@@ -1,4 +1,4 @@
-from config import *
+from utils.config import *
 from extract_rh_shots import run_parallel_job
 
 def main():

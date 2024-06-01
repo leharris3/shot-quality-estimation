@@ -10,12 +10,12 @@ from extract_rs_shots import (
     map_logs_to_videos,
     load_shot_attempts,
 )
-from truncate_clips_helpers import (
+from utils.truncate import (
     get_model,
 )
-from timeout import function_with_timeout
-from utils import get_video_aspect_ratio, get_shot_subdir, shot_exists, save_and_process_shot
-from config import *
+from utils.timeout import function_with_timeout
+from utils.utils import get_video_aspect_ratio, get_shot_subdir, shot_exists, save_and_process_shot
+from utils.config import *
 
 def run_parallel_job(dst_dir: str, hudl_logs_dir: str, videos_dir: str, num_devices: int = 1):
     if not os.path.isdir(dst_dir):
@@ -83,7 +83,7 @@ def process_video_log_pair_result_hidden(
         shot_attempts,
         video_fp,
         device=device,
-        timesformer_model=model,
+        model=model,
     )
 
 
