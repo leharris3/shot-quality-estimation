@@ -28,29 +28,13 @@ STEP = 6
 FPS = 30.0
 
 
-def read_video_to_tensor_buffer(video_path: str, device: int):
-
-    # video_tensor, _, _ = read_video(video_path, output_format="TCHW", pts_unit="sec")
-    # video_tensor = video_tensor.float().div_(255.0)
-    # transforms = Compose([Resize((224, 224))])
-    # if torch.cuda.is_available():
-    #     video_tensor = video_tensor.cuda(device)
-    # resized_tensor = transforms(video_tensor)
-    # resized_tensor = resized_tensor.permute(1, 0, 2, 3).unsqueeze(0)
-    # return resized_tensor
-
+def read_video_to_tensor_buffer(video_path: str):
     video_tensor, _, _ = read_video(video_path, output_format="TCHW", pts_unit="sec")
-    video_tensor = video_tensor.float() / 255.0
-    transforms = Compose(
-        [
-            Resize((224, 224)),
-        ]
-    )
-    resized_and_normalized_tensor = transforms(video_tensor)
-    resized_and_normalized_tensor = resized_and_normalized_tensor.permute(
-        1, 0, 2, 3
-    ).unsqueeze(0)
-    return resized_and_normalized_tensor
+    video_tensor = video_tensor.float().div_(255.0)
+    transform = Resize((224, 224))
+    video_tensor = transform(video_tensor)
+    video_tensor = video_tensor.permute(1, 0, 2, 3).unsqueeze_(0)
+    return video_tensor
 
 
 def find_local_min(array, thresh=MIN_CONF_THRESH):
@@ -76,20 +60,21 @@ def find_local_max(array, thresh=MIN_CONF_THRESH):
 def pred_conf_scores(video_tensor, device, model, step_size: int = STEP):
 
     video_tensor = video_tensor.to(device)
-    confidence_scores = []
-    timestamps = []
-    frame_increment = list(video_tensor.size())[2] - VID_LEN_FRAMES
-
+    frame_increment = video_tensor.size(2) - VID_LEN_FRAMES
     half_vid_len = VID_LEN_FRAMES // 2
     fps_inv = 1 / FPS
+    num_iterations = frame_increment // step_size + 1
+    confidence_scores = [None] * num_iterations
+    timestamps = [None] * num_iterations
 
     with torch.no_grad():
-        for index in range(0, frame_increment, step_size):
+        for i, index in enumerate(range(0, frame_increment, step_size)):
             temp_video = video_tensor[:, :, index : index + VID_LEN_FRAMES, :, :]
             preds = model(temp_video)
             probs = torch.nn.functional.softmax(preds, dim=1)
-            confidence_scores.append(probs)
-            timestamps.append(fps_inv * (index + half_vid_len))
+            confidence_scores[i] = probs
+            timestamps[i] = fps_inv * (index + half_vid_len)
+    
     return confidence_scores, timestamps
 
 

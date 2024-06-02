@@ -10,11 +10,12 @@ OUT_SHOT_DURATION_SEC = 4
 # final output video height, og aspect ratio maintained
 TARGET_HEIGHT = 480
 
-# duration of temp clip
-TEMP_SHOT_DURATION_SEC = 7
 
 # fps for original and truncated video
 FPS = 30
+
+# duration of temp clip
+TEMP_SHOT_DURATION_SEC = 7
 
 # temp clip start time: timestamp (given by logs) - 5.0s
 TEMP_SHOT_OFFSET_SEC = 5

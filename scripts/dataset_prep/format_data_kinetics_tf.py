@@ -8,7 +8,10 @@ from tqdm import tqdm
 
 
 def is_mp4_and_valid(file_path):
-    command = f"ffmpeg -i {shlex.quote(file_path)} -hide_banner"
+    if os.path.getsize(file_path) <= 1000:
+        return False  # File is too small, likely corrupted or blank
+    
+    command = f"ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 {shlex.quote(file_path)}"
     process = subprocess.Popen(
         command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )
@@ -30,15 +33,12 @@ def clean_file(file_path):
 
 def clean_directory(dir_path):
     """Iterate over all files in the directory and its subdirectories, and delete non-valid MP4 files using multithreading."""
-    files_to_check = []
-    for root, _, files in os.walk(dir_path):
-        for file in files:
-            file_path = os.path.join(root, file)
-            if file_path.endswith(".mp4"):
-                files_to_check.append(file_path)
+    files_to_check = (os.path.join(root, file)
+                      for root, _, files in os.walk(dir_path)
+                      for file in files if file.endswith(".mp4"))
 
-    with ThreadPoolExecutor(max_workers=1) as executor:
-        list(tqdm(executor.map(clean_file, files_to_check), total=len(files_to_check)))
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        list(tqdm(executor.map(clean_file, files_to_check)))
 
 
 def format_dataset_kinetics(dir_path: str):

@@ -1,9 +1,9 @@
-from tqdm import tqdm
+import concurrent.futures
 import os
 import concurrent
 import pandas as pd
 
-from concurrent.futures import ThreadPoolExecutor
+from tqdm import tqdm
 
 from extract_rs_shots import (
     generate_file_paths,
@@ -13,11 +13,11 @@ from extract_rs_shots import (
 from utils.truncate import (
     get_model,
 )
-from utils.timeout import function_with_timeout
 from utils.utils import get_video_aspect_ratio, get_shot_subdir, shot_exists, save_and_process_shot
 from utils.config import *
 
 def run_parallel_job(dst_dir: str, hudl_logs_dir: str, videos_dir: str, num_devices: int = 1):
+    # Validate directories
     if not os.path.isdir(dst_dir):
         raise ValueError(f"Destination directory {dst_dir} does not exist.")
     if not os.path.isdir(hudl_logs_dir):
@@ -27,6 +27,7 @@ def run_parallel_job(dst_dir: str, hudl_logs_dir: str, videos_dir: str, num_devi
     if num_devices <= 0:
         raise ValueError("Number of devices must be greater than zero.")
     
+    # Generate file paths
     log_fps = generate_file_paths(hudl_logs_dir)
     videos_fps = generate_file_paths(videos_dir)
     logs_vids_mapped = map_logs_to_videos(videos_fps, log_fps)
@@ -36,9 +37,8 @@ def run_parallel_job(dst_dir: str, hudl_logs_dir: str, videos_dir: str, num_devi
         raise ValueError("No videos to process.")
     
     num_vids_per_device = (total_videos + num_devices - 1) // num_devices
-    models = [get_model(device=device, model_path=MODEL_FP) for device in range(num_devices)]
 
-    with ThreadPoolExecutor(max_workers=num_devices) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=num_devices) as executor:
         processes = []
         pbar = tqdm(total=total_videos, desc="Processing Videos")  # Initialize progress bar
         for device in range(num_devices):
@@ -46,18 +46,15 @@ def run_parallel_job(dst_dir: str, hudl_logs_dir: str, videos_dir: str, num_devi
             end_idx = min(start_idx + num_vids_per_device, total_videos)
             subset = logs_vids_mapped[start_idx:end_idx]
             if subset:  # Only submit if there are items to process
-                model = models[device % len(models)]
-                process = executor.submit(process_thread, dst_dir, subset, device, model, pbar)
+                process = executor.submit(process_thread, dst_dir, subset, device, pbar)
                 processes.append(process)
         for process in concurrent.futures.as_completed(processes):
             process.result()
         pbar.close()  # Close the progress bar when done
 
 
-def process_thread(dst_dir: str, logs_vids_mapped, device: int = 0, model=None, pbar=None):
-    if not model:
-        raise ValueError("Model cannot be None.")
-    
+def process_thread(dst_dir: str, logs_vids_mapped, device: int = 0, pbar=None):
+    model = get_model(device=device)
     for video_fp, log_fp in logs_vids_mapped:
         process_video_log_pair_result_hidden(dst_dir, video_fp, log_fp, device, model)
         if pbar:
@@ -70,12 +67,6 @@ def process_video_log_pair_result_hidden(
     """
     Extract all result-hidden shot-attempts in `video_path` to `dst_dir`.
     """
-
-    try:
-        function_with_timeout(load_shot_attempts, args=(log_fp,), timeout_duration=1)
-    except Exception as e:
-        print(f"Error: {e}")
-        return
 
     shot_attempts = load_shot_attempts(log_fp)
     extract_shots_result_hidden(
@@ -99,27 +90,23 @@ def extract_shots_result_hidden(dst_dir: str, shot_attempts: pd.DataFrame, video
         device (int, optional): GPU ID for processing. Defaults to 0.
         model (optional): The model to use for processing video frames. Defaults to None.
     """
+
     period = int(video_fp.split("_period")[1].split(".mp4")[0])
     game_id = os.path.basename(video_fp).split("_")[0]
     shot_attempts_for_period = shot_attempts[shot_attempts["half"] == period]
 
-    for _, row in tqdm(shot_attempts_for_period.iterrows(), total=shot_attempts_for_period.shape[0], desc="Processing Shots"):
+    for _, row in shot_attempts_for_period.iterrows():
         subdir = get_shot_subdir(row.action_name)
         if subdir is None:
             continue
-
         clip_name = f"{game_id}_{row.action_id}_{row.action_name}_{row.second}.mp4"
         dst_path = os.path.join(dst_dir, subdir, clip_name)
-
         if shot_exists(dst_dir, clip_name):
             continue
-
         start_time = row.second - TEMP_SHOT_OFFSET_SEC
-
         try:
             aspect_ratio = get_video_aspect_ratio(video_fp)
         except ValueError as e:
             print(f"{e} \n Error processing video at {video_fp}")
             continue
-
         save_and_process_shot(video_fp, dst_path, start_time, aspect_ratio, row, dst_dir, device, model)
