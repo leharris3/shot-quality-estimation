@@ -1,24 +1,21 @@
-MODEL_FP = "/playpen-storage/levlevi/contextualized-shot-quality-analysis/data/experiments/_timesformer_/__runs__/result-noise-cls/nba_result_cls_3k_32_frames_224/checkpoints/checkpoint_epoch_00020.pyth"
-
-MADE_SHOT_SUBDIR = "made"
-MISSED_SHOT_SUBDIR = "missed"
-GARBAGE_SUBDIR = "garbage"
-
-# duration of final truncated clip
-OUT_SHOT_DURATION_SEC = 4
-
-# final output video height, og aspect ratio maintained
-TARGET_HEIGHT = 480
-
-
 # fps for original and truncated video
 FPS = 30
+
+MODEL_FP = "/playpen-storage/levlevi/contextualized-shot-quality-analysis/data/experiments/_timesformer_/__runs__/result-noise-cls/nba_result_cls_3k_32_frames_224/checkpoints/checkpoint_epoch_00020.pyth"
 
 # duration of temp clip
 TEMP_SHOT_DURATION_SEC = 7
 
 # temp clip start time: timestamp (given by logs) - 5.0s
 TEMP_SHOT_OFFSET_SEC = 5
+
+# duration of final truncated clip
+OUT_SHOT_DURATION_SEC = 4
+
+MADE_SHOT_SUBDIR = "made"
+MISSED_SHOT_SUBDIR = "missed"
+GARBAGE_SUBDIR = "garbage"
+
 
 # truncate original video 20 frames after max_conf timestamp
 # optimal split deterimined by analysis done in the testing folder
@@ -34,6 +31,11 @@ HIGH_NOISE_IDX = 210 - (120)
 # total frame count of temp vid
 TEMP_VID_NUM_FRAMES = int(TEMP_SHOT_DURATION_SEC * FPS)
 
+# final output video height, og aspect ratio maintained
+TARGET_HEIGHT = 480
+
 STEP = 6
 SIGMA = 4
 NUM_GPUS = 8
+
+MIN_CONF_THRESH = 0.17

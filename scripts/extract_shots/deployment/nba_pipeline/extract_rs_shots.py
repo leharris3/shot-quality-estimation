@@ -60,25 +60,20 @@ def save_shot_clip(
     Given a full video at `video_path` and a `dst_path`, sample a clip at
     `start_time` with `duration` with `target_height` and `aspect_ratio`.
     """
-    
-    assert os.path.isfile(video_path), f"The file {video_path} does not exist."
+
+    assert os.path.isfile(video_path)
     new_width = int(height * aspect_ratio)
     
-    # Ensure width is even multiple
+    # ensure width is even multiple
     if new_width % 2 != 0:
         new_width += 1
-    
-    # Ensure destination directory exists
-    dst_dir = os.path.dirname(dst_path)
-    if not os.path.exists(dst_dir):
-        os.makedirs(dst_dir, exist_ok=True)
-    
+        
     try:
         ffmpeg.input(video_path, ss=start_time, t=duration).filter(
             "scale", new_width, height
         ).output(dst_path).global_args("-loglevel", "error").run()
     except Exception as e:
-        print(f"Error processing video {video_path}: {e}")
+        print(video_path)
         raise Exception(e)
 
 

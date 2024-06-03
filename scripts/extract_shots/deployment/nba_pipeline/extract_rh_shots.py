@@ -50,6 +50,7 @@ def run_parallel_job(dst_dir: str, hudl_logs_dir: str, videos_dir: str, num_devi
                 processes.append(process)
         for process in concurrent.futures.as_completed(processes):
             process.result()
+            pbar.update(1)
         pbar.close()  # Close the progress bar when done
 
 

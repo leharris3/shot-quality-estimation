@@ -34,6 +34,7 @@
 
 #### Data Quality
 
-| Epoch | Train Err | Train Loss | Val Err | Test Acc | Test Acc - Maj Cls |
-| :---: | :---: | :---: | :---: | :---: | :---: |
-| 20 | 42.26 | 0.664 | 44.32 | **54.15** | **4.15** |
+| Mean Diff (Frames)| % Result Shown | Clip Recall | Test Acc | Test Acc - Maj Cls |
+| :---: | :---: | :---: | :---: | :---: |
+| -70.864 | **3.78** | **0.704** | 54.384 | 4.384 |
+| **-32.248** | 5.10 | 0.351 | --- | --- |

@@ -57,10 +57,10 @@ def save_and_process_shot(video_fp, dst_path, start_time, aspect_ratio, row, dst
     os.remove(dst_path)
     logging.debug(f"Removed original clip {dst_path}")
 
-    conf_scores, timestamps = pred_conf_scores(video_tensor, device=device, model=model, step_size=STEP)
+    conf_scores, timestamps = pred_conf_scores(video_tensor, device=device, model=model)
 
     try:
-        max_idx = get_highest_conf_idx(conf_scores, sigma=SIGMA)
+        max_idx = get_highest_conf_idx(conf_scores)
     except Exception as e:
         logging.warning(f"Failed to get highest conf idx: {e}")
         return
