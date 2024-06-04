@@ -1,3 +1,4 @@
 *.pyc
 *.gitignore
+*.out
 scripts/extract_shots/testing
